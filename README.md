@@ -37,17 +37,17 @@ The primary goal of this project, beyond just being a lot of fun to work on, is 
 
 ```bash
 git clone git@github.com:a16z-infra/ai-town.git
-cd AI-town
+cd ai-town
 npm install
-npm run dev
 ```
 
-`npm run dev` will fail asking for environment variables.
-Enter them in the environment variables on your Convex dashboard to proceed.
-You can get there via `npx convex dashboard` or https://dashboard.convex.dev
-See below on how to get the various environnment variables.
+### Set up third-party APIs
 
-a. **Set up Clerk**
+The app requires several third-party services to run (see "Stack" above).
+Set up these services & add the corresponding secrets to the app environment.
+Sign up for a free account with each, if you don't have these accounts already.
+
+a. **Set up [Clerk](https://clerk.com/) for authentication**
 
 - Go to https://dashboard.clerk.com/ and click on "Add Application"
 - Name your application and select the sign-in providers you would like to offer users
@@ -60,26 +60,45 @@ CLERK_SECRET_KEY=sk_***
 ```
 
 - Go to JWT Templates and create a new Convex Template.
-- Copy the JWKS endpoint URL for use below.
+- Make note of the JWKS endpoint URL for use below (this will be the `CLERK_ISSUER_URL` variable)
 
-b. **OpenAI API key**
+b. **Get [OpenAI](https://platform.openai.com/docs/models) API key for language model**
 
-Visit https://platform.openai.com/account/api-keys to get your OpenAI API key if you're using OpenAI for your language model.
+Visit https://platform.openai.com/account/api-keys to get/create your OpenAI API key if you're using OpenAI for your language model.
 
-c. **Pinecone API keys**
+Make note of the API key for use below
 
-- Create a Pinecone index by visiting https://app.pinecone.io/ and click on "Create Index"
+c. **Set up [Pinecone](https://www.pinecone.io/) vector database**
+
+- Create a Pinecone index by visiting https://app.pinecone.io/ and clicking on "Create Index"
 - Give it an index name (this will be the environment variable `PINECONE_INDEX_NAME`)
 - Fill in Dimension as `1536`
-- Once the index is successfully created, click on "API Keys" on the left side nav and create an API key: copy "Environment" value to `PINECONE_ENVIRONMENT` variable, and "Value" to `PINECONE_API_KEY`
+- Once the index is successfully created, click on "API Keys" on the left side nav and create an API key
+- Note the key's "Environment" and "Value" (these will be the `PINECONE_ENVIRONMENT` and `PINECONE_API_KEY` variables, respectively)
 
-d. **Add secrets to the convex dashboard**
+d. **Configure the Convex project**
+
+Within the `ai-town` root directory, try to run the application with the command:
+
+```bash
+npm run dev
+```
+
+Follow the prompts to configure a Convex project for the app.
+
+Then, `npm run dev` will fail asking for environment variables.
+Follow the next step to set all the needed variables, using the values noted above.
+
+e. **Add secrets to the Convex dashboard**
+
+Open the Convex dashboard by visiting https://dashboard.convex.dev, or by running the command:
 
 ```bash
 npx convex dashboard
 ```
 
-Go to "settings" and add the following environment varables. `CLERK_ISSUER_URL` should be the URL from the JWKS endpoint.
+In the dashboard, navigate to the project you configured.
+Go to the project "Settings" and add the following environment varables, using the values noted above.
 
 ```bash
 OPENAI_API_KEY  sk-*******
@@ -91,7 +110,7 @@ PINECONE_INDEX_NAME  ********
 
 ### Run the code
 
-To run both the front and and back end:
+With the environment now properly configured, run both the front and and back end:
 
 ```bash
 npm run dev
@@ -108,8 +127,7 @@ npm run dev:backend
 
 See package.json for details, but dev:backend runs `npx convex dev`
 
-
-*Note: The simulation will pause after 5 minutes if the window is idle.
+**Note**: The simulation will pause after 5 minutes if the window is idle.
 Loading the page will unpause it. If you want to run the world without the
 browser, you can comment-out the heartbeat check in `convex/engine.ts`
 
@@ -216,13 +234,14 @@ ARG NEXT_PUBLIC_CONVEX_URL
 # Build application
 RUN npm run build
 ```
+
 - Run `fly deploy --ha=false` to deploy the app. The --ha flag makes sure fly only spins up one instance, which is included in the free plan.
 - Run `fly scale memory 512` to scale up the fly vm memory for this app.
 - Create a new file `.env.prod` locally and fill in all the production-environment secrets. Remember to update `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY` by copying secrets from Clerk's production instance -`cat .env.prod | fly secrets import` to upload secrets. Also remember to update `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL`.
 
-
 ## Customize your own simulation
-NOTE: every time you change character data, you should re-run `npx convex run testing:debugClearAll --no-push` and then `npm run dev` to re-upload everything to Convex. This is because character data is sent to Convex on the initial load. However, beware that `npx convex run testing:debugClearAll --no-push` WILL wipe all of your data, including your vector store.
+
+**NOTE**: every time you change character data, you should re-run `npx convex run testing:debugClearAll --no-push` and then `npm run dev` to re-upload everything to Convex. This is because character data is sent to Convex on the initial load. However, beware that `npx convex run testing:debugClearAll --no-push` WILL wipe all of your data, including your vector store.
 
 1. Create your own characters and stories: All characters and stories, as well as their spritesheet references are stored in [data.ts](./convex/characterdata/data.ts#L4). You can start by changing character descriptions.
 2. Updating spritesheets: in `data.ts`, you will see this code:
